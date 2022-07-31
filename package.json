@@ -1,6 +1,6 @@
 {
-  "name": "rate-express",
-  "version": "0.0.4",
+  "name": "reaction-express",
+  "version": "0.1.1",
   "description": "rate-express",
   "main": "./lib/index.js",
   "types": "./src/index.ts",
@@ -21,7 +21,7 @@
     "url": "git@github.com/core-ts/reaction-express"
   },
   "keywords": [
-    "rate",
-    "rate-express"
+    "reaction",
+    "reaction-express"
   ]
 }

@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { buildArray, format, fromRequest, getInteger, getParameters, getStatusCode, handleError, jsonResult, Log, ViewController } from 'express-ext';
-import { CommentFilter, CommentService, RateService, ReactionService } from './core';
+import { CommentFilter, CommentService, ReactionService } from './core';
 
+export * from './core';
 interface ErrorMessage {
   field: string;
   code: string;
@@ -145,22 +146,25 @@ export class ReactionController<R, F, C> {
   }
 }
 // tslint:disable-next-line:max-classes-per-file
-export class RateController<R, F, C> extends ReactionController<R, F, C> {
-  constructor(log: Log, protected rateService: RateService<R, F, C>, public validator: Validator<R>, commentValidator: Validator<C>, dates: string[], numbers: string[], generate: () => string, commentId?: string, userId?: string, author?: string, id?: string) {
-    super(log, rateService, commentValidator, dates, numbers, generate, commentId, userId, author, id);
+export class RateController<R> {
+  constructor(public log: Log, public act: (rate: R) => Promise<number>, public validate: (model: R, ctx?: any) => Promise<ErrorMessage[]>, author?: string, id?: string) {
+    this.id = (id && id.length > 0 ? id : 'id');
+    this.author = (author && author.length > 0 ? author : 'author');
     this.rate = this.rate.bind(this);
   }
+  id: string;
+  author: string;
   rate(req: Request, res: Response) {
     const rate: any = req.body;
     const id = req.params[this.id];
     const author = req.params[this.author];
     rate[this.id] = id;
     rate[this.author] = author;
-    this.validator.validate(rate).then(errors => {
+    this.validate(rate).then(errors => {
       if (errors && errors.length > 0) {
         res.status(getStatusCode(errors)).json(errors).end();
       } else {
-        this.rateService.rate(rate).then(rs => {
+        this.act(rate).then(rs => {
           return res.status(200).json(rs).end();
         }).catch(err => handleError(err, res, this.log));
       }

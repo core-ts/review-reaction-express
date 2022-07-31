@@ -95,8 +95,6 @@ export interface ReactionService<R, F, C> {
   search(s: F, limit?: number, offset?: number | string, fields?: string[], ctx?: any): Promise<SearchResult<R>>;
   load(id: string, author: string): Promise<R | null>;
 }
-export interface RateService<R, F, C> extends ReactionService<R, F, C> {
-  // search(s: F, limit?: number, offset?: number | string, fields?: string[], ctx?: any): Promise<SearchResult<R>>;
-  // getRate(id: string, author: string): Promise<R | null>;
+export interface RateService<R> {
   rate(rate: R): Promise<number>;
 }
