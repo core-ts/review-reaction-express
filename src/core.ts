@@ -58,7 +58,7 @@ export interface Filter {
   pageIndex?: number;
   pageSize?: number;
 }
-export interface RateCommentFilter extends Filter {
+export interface CommentFilter extends Filter {
   commentId?: string;
   id?: string;
   author?: string;
@@ -82,12 +82,9 @@ export interface Query<T, ID, S> extends ViewService<T, ID> {
   metadata?(): Attributes|undefined;
   load(id: ID, ctx?: any): Promise<T|null>;
 }
-export interface RateCommentService<R> extends Query<R, string, RateCommentFilter> {
+export interface CommentService<R> extends Query<R, string, CommentFilter> {
 }
-export interface RateService<R, F, C> {
-  search(s: F, limit?: number, offset?: number | string, fields?: string[], ctx?: any): Promise<SearchResult<R>>;
-  getRate(id: string, author: string): Promise<R | null>;
-  rate(rate: R): Promise<number>;
+export interface ReactionService<R, F, C> {
   setUseful(id: string, author: string, userId: string, ctx?: any): Promise<number>;
   removeUseful(id: string, author: string, userId: string, ctx?: any): Promise<number>;
   comment(comment: C): Promise<number>;
@@ -95,4 +92,11 @@ export interface RateService<R, F, C> {
   updateComment(comment: C): Promise<number>;
   getComments(id: string, author: string, limit?: number): Promise<C[]>;
   getComment(id: string): Promise<C|null>;
+  search(s: F, limit?: number, offset?: number | string, fields?: string[], ctx?: any): Promise<SearchResult<R>>;
+  // load(id: string, author: string): Promise<R | null>;
+}
+export interface RateService<R, F, C> extends ReactionService<R, F, C> {
+  // search(s: F, limit?: number, offset?: number | string, fields?: string[], ctx?: any): Promise<SearchResult<R>>;
+  getRate(id: string, author: string): Promise<R | null>;
+  rate(rate: R): Promise<number>;
 }
