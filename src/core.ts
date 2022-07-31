@@ -93,10 +93,10 @@ export interface ReactionService<R, F, C> {
   getComments(id: string, author: string, limit?: number): Promise<C[]>;
   getComment(id: string): Promise<C|null>;
   search(s: F, limit?: number, offset?: number | string, fields?: string[], ctx?: any): Promise<SearchResult<R>>;
-  // load(id: string, author: string): Promise<R | null>;
+  load(id: string, author: string): Promise<R | null>;
 }
 export interface RateService<R, F, C> extends ReactionService<R, F, C> {
   // search(s: F, limit?: number, offset?: number | string, fields?: string[], ctx?: any): Promise<SearchResult<R>>;
-  getRate(id: string, author: string): Promise<R | null>;
+  // getRate(id: string, author: string): Promise<R | null>;
   rate(rate: R): Promise<number>;
 }

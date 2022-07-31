@@ -25,6 +25,7 @@ export class ReactionController<R, F, C> {
     this.getComment = this.getComment.bind(this);
     this.getComments = this.getComments.bind(this);
     this.search = this.search.bind(this);
+    this.load = this.load.bind(this);
     this.dates = dates ? dates : ['time'];
     this.numbers = numbers ? numbers : ['rate', 'usefulCount', 'replyCount', 'count', 'score'];
   }
@@ -34,6 +35,17 @@ export class ReactionController<R, F, C> {
   protected author: string;
   protected userId: string;
   protected commentId: string;
+  load(req: Request, res: Response) {
+    const id = req.params[this.id];
+    const author = req.params[this.author];
+    this.reactionService.load(id, author).then(obj => {
+      if (obj) {
+        return res.status(200).json(obj).end();
+      } else {
+        return res.status(401).json(null).end();
+      }
+    }).catch(err => handleError(err, res, this.log));
+  }
   search(req: Request, res: Response) {
     const s = fromRequest<R>(req, buildArray(undefined, 'fields'));
     const l = getParameters(s);
@@ -132,23 +144,11 @@ export class ReactionController<R, F, C> {
     }).catch(err => handleError(err, res, this.log));
   }
 }
-
+// tslint:disable-next-line:max-classes-per-file
 export class RateController<R, F, C> extends ReactionController<R, F, C> {
   constructor(log: Log, protected rateService: RateService<R, F, C>, public validator: Validator<R>, commentValidator: Validator<C>, dates: string[], numbers: string[], generate: () => string, commentId?: string, userId?: string, author?: string, id?: string) {
     super(log, rateService, commentValidator, dates, numbers, generate, commentId, userId, author, id);
-    this.load = this.load.bind(this);
     this.rate = this.rate.bind(this);
-  }
-  load(req: Request, res: Response) {
-    const id = req.params[this.id];
-    const author = req.params[this.author];
-    this.rateService.getRate(id, author).then(rate => {
-      if (rate) {
-        return res.status(200).json(rate).end();
-      } else {
-        return res.status(401).json(null).end();
-      }
-    }).catch(err => handleError(err, res, this.log));
   }
   rate(req: Request, res: Response) {
     const rate: any = req.body;
