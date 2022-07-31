@@ -58,45 +58,6 @@ export interface Filter {
   pageIndex?: number;
   pageSize?: number;
 }
-export interface Rate {
-  id: string;
-  author: string;
-  authorURL?: string;
-  rate: number;
-  time: Date;
-  review: string;
-  usefulCount: number;
-  replyCount: number;
-  histories?: ShortRate[];
-}
-export interface ShortRate {
-  rate: number;
-  time: Date;
-  review: string;
-}
-export interface RateFilter extends Filter {
-  id?: string;
-  author?: string;
-  rate: number;
-  time?: Date;
-  review?: string;
-  usefulCount?: number;
-  replyCount?: number;
-}
-export interface RateComment {
-  commentId: string;
-  id: string;
-  author: string;
-  userId: string;
-  comment: string;
-  time: Date;
-  updatedAt?: Date;
-  histories?: ShortComment[];
-}
-export interface ShortComment {
-  comment: string;
-  time: Date;
-}
 export interface RateCommentFilter extends Filter {
   commentId?: string;
   id?: string;
@@ -121,15 +82,17 @@ export interface Query<T, ID, S> extends ViewService<T, ID> {
   metadata?(): Attributes|undefined;
   load(id: ID, ctx?: any): Promise<T|null>;
 }
-export interface RateCommentService extends Query<RateComment, string, RateCommentFilter> {
+export interface RateCommentService<R> extends Query<R, string, RateCommentFilter> {
 }
-export interface RateService {
-  search(s: RateFilter, limit?: number, offset?: number | string, fields?: string[], ctx?: any): Promise<SearchResult<Rate>>;
-  getRate(id: string, author: string): Promise<Rate | null>;
-  rate(rate: Rate): Promise<number>;
+export interface RateService<R, F, C> {
+  search(s: F, limit?: number, offset?: number | string, fields?: string[], ctx?: any): Promise<SearchResult<R>>;
+  getRate(id: string, author: string): Promise<R | null>;
+  rate(rate: R): Promise<number>;
   setUseful(id: string, author: string, userId: string, ctx?: any): Promise<number>;
   removeUseful(id: string, author: string, userId: string, ctx?: any): Promise<number>;
-  comment(comment: RateComment): Promise<number>;
+  comment(comment: C): Promise<number>;
   removeComment(id: string, author: string, ctx?: any): Promise<number>;
-  updateComment(comment: RateComment): Promise<number>;
+  updateComment(comment: C): Promise<number>;
+  getComments(id: string, author: string, limit?: number): Promise<C[]>;
+  getComment(id: string): Promise<C|null>;
 }

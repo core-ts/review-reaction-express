@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { buildArray, format, fromRequest, getParameters, getStatusCode, handleError, jsonResult, Log, ViewController } from 'express-ext';
-import { Rate, RateComment, RateCommentFilter, RateCommentService, RateFilter, RateService } from './core';
+import { buildArray, format, fromRequest, getInteger, getParameters, getStatusCode, handleError, jsonResult, Log, ViewController } from 'express-ext';
+import { RateCommentFilter, RateCommentService, RateService } from './core';
 
 interface ErrorMessage {
   field: string;
@@ -11,12 +11,12 @@ interface ErrorMessage {
 export interface Validator<T> {
   validate(model: T, ctx?: any): Promise<ErrorMessage[]>;
 }
-export class RateController {
-  constructor(protected log: Log, protected rateService: RateService, public validator: Validator<Rate>, public commentValidator: Validator<RateComment>, private generate: () => string, commentId: string, userId: string, author: string, id: string) {
-    this.id = (id && id.length > 0 ? 'id' : id);
-    this.author = (author && author.length > 0 ? 'author' : author);
-    this.userId = (userId && userId.length > 0 ? 'userId' : userId);
-    this.commentId = (commentId && commentId.length > 0 ? 'commentId' : commentId);
+export class RateController<R, F, C> {
+  constructor(protected log: Log, protected rateService: RateService<R, F, C>, public validator: Validator<R>, public commentValidator: Validator<C>, dates: string[], numbers: string[], private generate: () => string, commentId?: string, userId?: string, author?: string, id?: string) {
+    this.id = (id && id.length > 0 ? id : 'id');
+    this.author = (author && author.length > 0 ? author : 'author');
+    this.userId = (userId && userId.length > 0 ? userId : 'userId');
+    this.commentId = (commentId && commentId.length > 0 ? commentId : 'commentId');
     this.load = this.load.bind(this);
     this.rate = this.rate.bind(this);
     this.setUseful = this.setUseful.bind(this);
@@ -25,8 +25,10 @@ export class RateController {
     this.removeComment = this.removeComment.bind(this);
     this.updateComment = this.updateComment.bind(this);
     this.search = this.search.bind(this);
-    this.dates = ['time'];
-    this.numbers = ['rate', 'usefulCount', 'replyCount', 'count', 'score'];
+    this.getComment = this.getComment.bind(this);
+    this.getComments = this.getComments.bind(this);
+    this.dates = dates ? dates : ['time'];
+    this.numbers = numbers ? numbers : ['rate', 'usefulCount', 'replyCount', 'count', 'score'];
   }
   protected dates: string[];
   protected numbers: string[];
@@ -36,9 +38,13 @@ export class RateController {
   protected commentId: string;
 
   search(req: Request, res: Response) {
-    const s = fromRequest<RateFilter>(req, buildArray(undefined, 'fields'));
+    const s = fromRequest<R>(req, buildArray(undefined, 'fields'));
     const l = getParameters(s);
-    const s2 = format(s, this.dates, this.numbers);
+    const s2: any = format(s, this.dates, this.numbers);
+    const id = req.params[this.id];
+    const author = req.params[this.author];
+    s2[this.id] = id;
+    s2[this.author] = author;
     this.rateService.search(s2, l.limit, l.skipOrRefId, l.fields)
       .then(result => jsonResult(res, result, false, l.fields))
       .catch(err => handleError(err, res, this.log));
@@ -55,8 +61,11 @@ export class RateController {
     }).catch(err => handleError(err, res, this.log));
   }
   rate(req: Request, res: Response) {
-    const rate: Rate = req.body;
-    rate.time = new Date();
+    const rate: any = req.body;
+    const id = req.params[this.id];
+    const author = req.params[this.author];
+    rate[this.id] = id;
+    rate[this.author] = author;
     this.validator.validate(rate).then(errors => {
       if (errors && errors.length > 0) {
         res.status(getStatusCode(errors)).json(errors).end();
@@ -88,7 +97,11 @@ export class RateController {
     const author = req.params[this.author];
     const userId = req.params[this.userId];
     const commentId = this.generate();
-    const comment: RateComment = { commentId, id, author, userId, ...req.body };
+    const comment: any = req.body;
+    comment[this.commentId] = commentId;
+    comment[this.id] = id;
+    comment[this.author] = author;
+    comment[this.userId] = userId;
     this.commentValidator.validate(comment).then(errors => {
       if (errors && errors.length > 0) {
         res.status(getStatusCode(errors)).json(errors).end();
@@ -106,12 +119,34 @@ export class RateController {
       return res.status(200).json(reply).end();
     }).catch(err => handleError(err, res, this.log));
   }
+  getComment(req: Request, res: Response) {
+    const commentId = req.params[this.commentId];
+    this.rateService.getComment(commentId).then(comment => {
+      if (comment) {
+        return res.status(200).json(comment).end();
+      } else {
+        return res.status(401).json(null).end();
+      }
+    }).catch(err => handleError(err, res, this.log));
+  }
+  getComments(req: Request, res: Response) {
+    const id = req.params[this.id];
+    const author = req.params[this.author];
+    const limit = getInteger(req, 'limit');
+    this.rateService.getComments(id, author, limit).then(comments => {
+      res.status(200).json(comments).end();
+    }).catch(err => handleError(err, res, this.log));
+  }
   updateComment(req: Request, res: Response) {
     const id = req.params[this.id];
     const author = req.params[this.author];
     const userId = req.params[this.userId];
     const commentId = req.params[this.commentId];
-    const comment: RateComment = { commentId, id, author, userId, ...req.body };
+    const comment: any = req.body;
+    comment[this.commentId] = commentId;
+    comment[this.id] = id;
+    comment[this.author] = author;
+    comment[this.userId] = userId;
     this.commentValidator.validate(comment).then(errors => {
       if (errors && errors.length > 0) {
         res.status(getStatusCode(errors)).json(errors).end();
@@ -124,8 +159,8 @@ export class RateController {
   }
 }
 // tslint:disable-next-line:max-classes-per-file
-export class RateCommentController extends ViewController<RateComment, string, RateCommentFilter> {
-  constructor(log: Log, protected rateCommentService: RateCommentService) {
+export class RateCommentController<C> extends ViewController<C, string, RateCommentFilter> {
+  constructor(log: Log, protected rateCommentService: RateCommentService<C>) {
     super(log, rateCommentService);
   }
 }
