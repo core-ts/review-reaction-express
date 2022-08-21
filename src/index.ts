@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { buildArray, format, fromRequest, getInteger, getParameters, getStatusCode, handleError, jsonResult, Log, ViewController } from 'express-ext';
+import { buildArray, format, fromRequest, getInteger, getParameters, getStatusCode, handleError, jsonResult, Log, QueryController } from 'express-ext';
 import { CommentFilter, CommentService, ReactionService } from './core';
 
 export * from './core';
@@ -172,7 +172,7 @@ export class RateController<R> {
   }
 }
 // tslint:disable-next-line:max-classes-per-file
-export class RateCommentController<C> extends ViewController<C, string, CommentFilter> {
+export class RateCommentController<C> extends QueryController<C, string, CommentFilter> {
   constructor(log: Log, protected rateCommentService: CommentService<C>) {
     super(log, rateCommentService);
   }
